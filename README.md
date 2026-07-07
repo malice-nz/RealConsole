@@ -1,4 +1,4 @@
-<p><b>RealConsole</b> is a customisation system that lets you send more "personalised" logs to Roblox's dev console. Very simple to use!</p>
+<p><b>RealConsole</b> is a customisation system that lets you send more "personalised" logs to Roblox's dev console.</p>
 
 ```luau
 local RealConsole  = loadstring(game:HttpGet('https://raw.githubusercontent.com/malice-nz/RealConsole/main/main.lua'))':3';
@@ -28,8 +28,8 @@ RealConsole:Image(TextureId)
 :Warn(Text, Font?, Size?)
 :Error(Text, Font?, Size?)
 
-:Image("rbxassetid://123", 96)
-:Banner(Image, Text, Height, TextColour, Font)
+:Banner(TextureId, Text)
+:Image(TextureId)
 
 :Custom(function(Row) ... end, Height)
 
