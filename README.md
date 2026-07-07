@@ -1,7 +1,7 @@
 <p><b>RealConsole</b> is a customisation system that lets you send more "personalised" logs to Roblox's dev console.</p>
 
 ```luau
-local RealConsole  = loadstring(game:HttpGet('https://raw.githubusercontent.com/malice-nz/RealConsole/main/main.lua'))':3';
+local RealConsole  = loadstring(game:HttpGet('https://raw.githubusercontent.com/malice-nz/RealConsole/main/main.luau'))':3';
 ```
 
 ## Examples
