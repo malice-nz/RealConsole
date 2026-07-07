@@ -16,6 +16,24 @@ RealConsole:Warn('I am a warning!');
 RealConsole:Error('I am an error!');
 RealConsole:Error('I am an error but BIG!', Enum.Font.Code, 24);
 
-RealConsole:Banner("rbxassetid://11104447788", "I am a banner")
+RealConsole:Banner(TextureId, Text)
+RealConsole:Image(TextureId)
 ```
 
+## Functions
+
+```luau
+:Output(Text, Font?, Size?)
+:Info(Text, Font?, Size?)
+:Warn(Text, Font?, Size?)
+:Error(Text, Font?, Size?)
+
+:Image("rbxassetid://123", 96)
+:Banner(Image, Text, Height, TextColour, Font)
+
+:Custom(function(Row) ... end, Height)
+
+:OpenConsole()
+:Clear()
+:Destroy()
+```
