@@ -57,17 +57,17 @@ end;
 
 local function GetClientLogs()
 	local Exists, Scroll = pcall(function()
-		return(CoreGui:WaitForChild('DevConsoleMaster',99999)
-		:WaitForChild('DevConsoleWindow',99999)
-		:WaitForChild('DevConsoleUI',99999)
-		:WaitForChild('MainView',99999)
-		:WaitForChild('ClientLog',99999))
+		return(CoreGui:FindFirstChild('DevConsoleMaster')
+			:FindFirstChild('DevConsoleWindow')
+			:FindFirstChild('DevConsoleUI')
+			:FindFirstChild('MainView')
+			:FindFirstChild('ClientLog'))
 	end);
-	
+
 	if(Exists and Scroll and Scroll:IsA("ScrollingFrame")) then
 		return(Scroll);
 	end;
-	
+
 	local DevConsole = CoreGui:FindFirstChild("DevConsoleMaster")
 	if(DevConsole) then
 		for _, Descendant in ipairs(DevConsole:GetDescendants()) do
@@ -105,22 +105,22 @@ function RealConsole.New()
 	self.Tracked	= {};
 	self.Scroll		= nil;
 	self.Alive		= true;
-	
+
 	self:Bind();
-	
+
 	self.CoreConnection = CoreGui.DescendantAdded:Connect(function(Descendant)
 		if(Descendant:IsA("ScrollingFrame") and Descendant.Name == "ClientLog") then
 			task.defer(function() self:Bind(true) end);
 		end;
 	end);
-	
+
 	task.spawn(function()
 		while(self.Alive) do
 			self:Bind();
 			task.wait(0.25);
 		end;
 	end);
-	
+
 	return(self);
 end;
 
@@ -137,9 +137,9 @@ function RealConsole:Bind(Force)
 	if(not Force and self.Scroll == Scroll and self.Connection and self.Connection.Connected and Scroll:IsDescendantOf(game)) then
 		return(true);
 	end;
-	
+
 	if(self.Connection) then self.Connection:Disconnect() end;
-	
+
 	self.Scroll		= Scroll;
 	self.Connection	= Scroll.DescendantAdded:Connect(function(Descendant)
 		if(Descendant:IsA("TextLabel") and Descendant.Name == "msg") then
@@ -153,7 +153,7 @@ function RealConsole:Bind(Force)
 			end;
 		end;
 	end);
-	
+
 	for _, Descendant in ipairs(Scroll:GetDescendants()) do
 		if(Descendant:IsA("TextLabel") and Descendant.Name == "msg" and Descendant.Text) then
 			for Token, Spec in pairs(self.Tracked) do
@@ -172,7 +172,7 @@ function RealConsole:Insert(Lines, Spec)
 	local Token			= "RC" .. HttpService:GenerateGUID(false):gsub("-", "");
 	self.Tracked[Token]	= Spec;
 	local Marker		= Token;
-	
+
 	if(Lines and Lines > 1) then Marker = Token .. string.rep("\n", Lines - 1) end;
 	LogService:Info(Marker);
 	task.defer(function()
@@ -191,9 +191,9 @@ function RealConsole:Text(Kind, Text, FontValue, Size)
 	local MessageType	= MessageTypes[Kind];
 	local TextColour	= MessageType.Color or MessageTypes.Output.Color;
 	local Icon			= MessageType.Icon;
-	
+
 	Size = Size or DefaultMessage.FontSize;
-	
+
 	local Lines = math.max(1, math.ceil(Size / DefaultMessage.LineHeight));
 	return(self:Insert(Lines, {
 		Apply = function(Row)
@@ -206,14 +206,14 @@ function RealConsole:Text(Kind, Text, FontValue, Size)
 				IconLabel.BackgroundTransparency	= 1;
 				IconLabel.Parent					= Row;
 			end;
-			
+
 			local Label		= Instance.new("TextLabel");
 			Label.Name		= "RC_content";
 			Label.Text		= tostring(Text);
 			Label.RichText	= true;
-			
+
 			ApplyFont(Label, FontValue);
-			
+
 			Label.TextSize					= Size;
 			Label.TextColor3				= TextColour;
 			Label.TextXAlignment			= Enum.TextXAlignment.Left;
@@ -259,7 +259,7 @@ function RealConsole:Banner(Image, Text, Height, TextColour, FontValue)
 	local Source			= type(Image) == "number" and ("rbxassetid://" .. Image) or tostring(Image);
 	local BannerTextSize	= math.floor(Height * 0.75);
 	local BannerColour		= TextColour or Color3.fromRGB(255, 255, 255);
-	
+
 	return(self:Insert(Lines, {
 		Apply = function(Row)
 			local Holder					= Instance.new("Frame");
@@ -281,9 +281,9 @@ function RealConsole:Banner(Image, Text, Height, TextColour, FontValue)
 			Label.Name		= "Text";
 			Label.Text		= tostring(Text);
 			Label.RichText	= true;
-			
+
 			if(FontValue) then ApplyFont(Label, FontValue) else Label.Font = Enum.Font.GothamBold end;
-			
+
 			Label.TextSize					= BannerTextSize;
 			Label.TextColor3				= BannerColour;
 			Label.TextXAlignment 			= Enum.TextXAlignment.Left;
@@ -328,7 +328,7 @@ function RealConsole:OpenConsole()
 	VirtualInput:SendKeyEvent(true, Enum.KeyCode.F9, false, game);
 	task.wait();
 	VirtualInput:SendKeyEvent(false, Enum.KeyCode.F9, false, game);
-	
+
 	task.delay(0.25, function() self:Bind(true) end);
 	return(self);
 end;
