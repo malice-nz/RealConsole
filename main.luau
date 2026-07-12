@@ -57,7 +57,11 @@ end;
 
 local function GetClientLogs()
 	local Exists, Scroll = pcall(function()
-		return(CoreGui:WaitForChild('DevConsoleMaster'):WaitForChild('DevConsoleWindow'):WaitForChild('DevConsoleUI'):WaitForChild('MainView'):WaitForChild('ClientLog'))
+		return(CoreGui:WaitForChild('DevConsoleMaster',99999)
+		:WaitForChild('DevConsoleWindow',99999)
+		:WaitForChild('DevConsoleUI',99999)
+		:WaitForChild('MainView',99999)
+		:WaitForChild('ClientLog',99999))
 	end);
 	
 	if(Exists and Scroll and Scroll:IsA("ScrollingFrame")) then
