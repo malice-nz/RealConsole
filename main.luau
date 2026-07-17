@@ -10,7 +10,6 @@ local cloneref	= cloneref or function(v) return v end;
 local LogService	= cloneref(game:GetService('LogService'));
 local HttpService	= cloneref(game:GetService("HttpService"));
 local CoreGui		= cloneref(game:GetService("CoreGui"));
-local VirtualInput	= cloneref(game:GetService("VirtualInputManager"));
 
 --# Types #--
 local DefaultMessage	= {
@@ -325,9 +324,9 @@ function RealConsole:OpenConsole()
 		self:Bind();
 		return(self);
 	end;
-	VirtualInput:SendKeyEvent(true, Enum.KeyCode.F9, false, game);
-	task.wait();
-	VirtualInput:SendKeyEvent(false, Enum.KeyCode.F9, false, game);
+	--VirtualInput:SendKeyEvent(true, Enum.KeyCode.F9, false, game);
+	--task.wait();
+	--VirtualInput:SendKeyEvent(false, Enum.KeyCode.F9, false, game);
 
 	task.delay(0.25, function() self:Bind(true) end);
 	return(self);
