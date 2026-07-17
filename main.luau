@@ -5,6 +5,7 @@
 
 --* malice.nz
 local cloneref	= cloneref or function(v) return v end;
+local setthreadidentity	= setthreadidentity or function() end;
 
 --# Services #--
 local LogService	= cloneref(game:GetService('LogService'));
@@ -115,8 +116,10 @@ function RealConsole.New()
 
 	task.spawn(function()
 		while(self.Alive) do
+setthreadidentity(8)
 			self:Bind();
 			task.wait(0.25);
+setthreadidentity(2)
 		end;
 	end);
 
@@ -196,6 +199,7 @@ function RealConsole:Text(Kind, Text, FontValue, Size)
 	local Lines = math.max(1, math.ceil(Size / DefaultMessage.LineHeight));
 	return(self:Insert(Lines, {
 		Apply = function(Row)
+setthreadidentity(8)
 			if(Icon) then
 				local IconLabel						= Instance.new("ImageLabel");
 				IconLabel.Name						= "RC_icon";
@@ -222,6 +226,7 @@ function RealConsole:Text(Kind, Text, FontValue, Size)
 			Label.Size						= UDim2.new(1, -DefaultMessage.ArrowOffset, 1, 0);
 			Label.Position					= UDim2.new(0, DefaultMessage.ArrowOffset, 0, 0);
 			Label.Parent					= Row;
+setthreadidentity(2)
 		end,
 	}));
 end;
@@ -239,6 +244,7 @@ function RealConsole:Image(Image, Height)
 	local Source	= type(Image) == "number" and ("rbxassetid://" .. Image) or tostring(Image);
 	return(self:Insert(Lines, {
 		Apply = function(Row)
+setthreadidentity(8)
 			local ImageLabel					= Instance.new("ImageLabel");
 			ImageLabel.Name						= "RC_content";
 			ImageLabel.Image					= Source;
@@ -247,6 +253,7 @@ function RealConsole:Image(Image, Height)
 			ImageLabel.BackgroundTransparency	= 1;
 			ImageLabel.ScaleType				= Enum.ScaleType.Fit;
 			ImageLabel.Parent					= Row;
+setthreadidentity(2)
 		end,
 	}));
 end;
@@ -261,6 +268,7 @@ function RealConsole:Banner(Image, Text, Height, TextColour, FontValue)
 
 	return(self:Insert(Lines, {
 		Apply = function(Row)
+setthreadidentity(8)
 			local Holder					= Instance.new("Frame");
 			Holder.Name						= "RC_content";
 			Holder.BackgroundTransparency	= 1;
@@ -294,6 +302,7 @@ function RealConsole:Banner(Image, Text, Height, TextColour, FontValue)
 			Label.Parent					= Holder;
 
 			Holder.Parent	= Row;
+setthreadidentity(2)
 		end,
 	}));
 end;
@@ -303,6 +312,7 @@ function RealConsole:Custom(Content, Height)
 	local Lines	= math.max(1, math.ceil(Height / DefaultMessage.LineHeight));
 	return(self:Inject(Lines, {
 		Apply = function(Row)
+setthreadidentity(8)
 			if(type(Content) == "function") then
 				local Made	= Content(Row);
 				if(typeof(Made) == "Instance") then
@@ -315,6 +325,7 @@ function RealConsole:Custom(Content, Height)
 				Clone.Position	= UDim2.new(0, DefaultMessage.ArrowOffset, 0, 0);
 				Clone.Parent	= Row;
 			end;
+setthreadidentity(2)
 		end,
 	}));
 end;
