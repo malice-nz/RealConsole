@@ -5,7 +5,25 @@
 
 --* malice.nz
 local cloneref	= cloneref or function(v) return v end;
-local setthreadidentity	= setthreadidentity or function() end;
+
+--# Thread Identity #--
+local setthreadidentity	= setthreadidentity or setidentity or setthreadcontext;
+local getthreadidentity	= getthreadidentity or getidentity or getthreadcontext;
+
+local ConsoleIdentity	= 8;
+local function GetThreadIdentity()
+	return (getthreadidentity and getthreadidentity()) or 2;
+end;
+
+local function Elevated(Callback, ...)
+	if(not setthreadidentity) then return(Callback(...)) end;
+	local Previous	= GetThreadIdentity();
+	setthreadidentity(ConsoleIdentity);
+	local Results	= table.pack(pcall(Callback, ...));
+	setthreadidentity(Previous);
+	if(not Results[1]) then return end;
+	return(table.unpack(Results, 2, Results.n));
+end;
 
 --# Services #--
 local LogService	= cloneref(game:GetService('LogService'));
@@ -56,47 +74,53 @@ local function ApplyFont(Label, FontValue)
 end;
 
 local function GetClientLogs()
-	local Exists, Scroll = pcall(function()
-		return(CoreGui:FindFirstChild('DevConsoleMaster')
-			:FindFirstChild('DevConsoleWindow')
-			:FindFirstChild('DevConsoleUI')
-			:FindFirstChild('MainView')
-			:FindFirstChild('ClientLog'))
-	end);
+	return Elevated(function()
+		local Exists, Scroll = pcall(function()
+			return(CoreGui:FindFirstChild('DevConsoleMaster')
+				:FindFirstChild('DevConsoleWindow')
+				:FindFirstChild('DevConsoleUI')
+				:FindFirstChild('MainView')
+				:FindFirstChild('ClientLog'))
+		end);
 
-	if(Exists and Scroll and Scroll:IsA("ScrollingFrame")) then
-		return(Scroll);
-	end;
+		if(Exists and Scroll and Scroll:IsA("ScrollingFrame")) then
+			return(Scroll);
+		end;
 
-	local DevConsole = CoreGui:FindFirstChild("DevConsoleMaster")
-	if(DevConsole) then
-		for _, Descendant in ipairs(DevConsole:GetDescendants()) do
-			if(Descendant:IsA("ScrollingFrame") and Descendant:FindFirstChildOfClass("UIListLayout")) then
-				for _, Child in ipairs(Descendant:GetChildren()) do
-					if(Child:IsA("Frame") and Child:FindFirstChild("msg")) then
-						return(Descendant)
+		local DevConsole = CoreGui:FindFirstChild("DevConsoleMaster")
+		if(DevConsole) then
+			for _, Descendant in ipairs(DevConsole:GetDescendants()) do
+				if(Descendant:IsA("ScrollingFrame") and Descendant:FindFirstChildOfClass("UIListLayout")) then
+					for _, Child in ipairs(Descendant:GetChildren()) do
+						if(Child:IsA("Frame") and Child:FindFirstChild("msg")) then
+							return(Descendant)
+						end
 					end
 				end
 			end
 		end
-	end
-	return(nil)
+		return(nil)
+	end);
 end;
 
 local function IsConsoleVisible()
-	local DevConsole	= CoreGui:FindFirstChild("DevConsoleMaster");
-	local Window		= DevConsole and DevConsole:FindFirstChild("DevConsoleWindow");
-	return(Window ~= nil and Window.Visible == true);
+	return Elevated(function()
+		local DevConsole	= CoreGui:FindFirstChild("DevConsoleMaster");
+		local Window		= DevConsole and DevConsole:FindFirstChild("DevConsoleWindow");
+		return(Window ~= nil and Window.Visible == true);
+	end) == true;
 end;
 
 local function ApplySpec(Message, Spec)
-	local Row	= Message.Parent;
-	if(not Row) then return end;
-	Message.TextTransparency	= 1;
-	local NativeIcon = Row:FindFirstChild("image")
-	if(NativeIcon) then NativeIcon.ImageTransparency = 1 end;
-	if(Row:FindFirstChild("RC_content")) then return end;
-	Spec.Apply(Row);
+	Elevated(function()
+		local Row	= Message.Parent;
+		if(not Row) then return end;
+		Message.TextTransparency	= 1;
+		local NativeIcon = Row:FindFirstChild("image")
+		if(NativeIcon) then NativeIcon.ImageTransparency = 1 end;
+		if(Row:FindFirstChild("RC_content")) then return end;
+		Spec.Apply(Row);
+	end);
 end;
 
 --# Constructor #--
@@ -116,10 +140,8 @@ function RealConsole.New()
 
 	task.spawn(function()
 		while(self.Alive) do
-setthreadidentity(8)
 			self:Bind();
 			task.wait(0.25);
-setthreadidentity(2)
 		end;
 	end);
 
@@ -134,39 +156,43 @@ function RealConsole:Destroy()
 end;
 
 function RealConsole:Bind(Force)
-	local Scroll	= GetClientLogs()
-	if(not Scroll) then return(false) end;
-	if(not Force and self.Scroll == Scroll and self.Connection and self.Connection.Connected and Scroll:IsDescendantOf(game)) then
+	return Elevated(function()
+		local Scroll	= GetClientLogs()
+		if(not Scroll) then return(false) end;
+		if(not Force and self.Scroll == Scroll and self.Connection and self.Connection.Connected and Scroll:IsDescendantOf(game)) then
+			return(true);
+		end;
+
+		if(self.Connection) then self.Connection:Disconnect() end;
+
+		self.Scroll		= Scroll;
+		self.Connection	= Scroll.DescendantAdded:Connect(function(Descendant)
+			Elevated(function()
+				if(Descendant:IsA("TextLabel") and Descendant.Name == "msg") then
+					local Text = Descendant.Text
+					if(not Text) then return end
+					for Token, Spec in pairs(self.Tracked) do
+						if(string.find(Text, Token, 1, true)) then
+							ApplySpec(Descendant, Spec);
+							break;
+						end;
+					end;
+				end;
+			end);
+		end);
+
+		for _, Descendant in ipairs(Scroll:GetDescendants()) do
+			if(Descendant:IsA("TextLabel") and Descendant.Name == "msg" and Descendant.Text) then
+				for Token, Spec in pairs(self.Tracked) do
+					if(string.find(Descendant.Text, Token, 1, true)) then
+						ApplySpec(Descendant, Spec);
+						break;
+					end;
+				end;
+			end;
+		end;
 		return(true);
-	end;
-
-	if(self.Connection) then self.Connection:Disconnect() end;
-
-	self.Scroll		= Scroll;
-	self.Connection	= Scroll.DescendantAdded:Connect(function(Descendant)
-		if(Descendant:IsA("TextLabel") and Descendant.Name == "msg") then
-			local Text = Descendant.Text
-			if(not Text) then return end
-			for Token, Spec in pairs(self.Tracked) do
-				if(string.find(Text, Token, 1, true)) then
-					ApplySpec(Descendant, Spec);
-					break;
-				end;
-			end;
-		end;
-	end);
-
-	for _, Descendant in ipairs(Scroll:GetDescendants()) do
-		if(Descendant:IsA("TextLabel") and Descendant.Name == "msg" and Descendant.Text) then
-			for Token, Spec in pairs(self.Tracked) do
-				if(string.find(Descendant.Text, Token, 1, true)) then
-					ApplySpec(Descendant, Spec);
-					break;
-				end;
-			end;
-		end;
-	end;
-	return(true);
+	end) == true;
 end;
 
 function RealConsole:Insert(Lines, Spec)
@@ -178,13 +204,15 @@ function RealConsole:Insert(Lines, Spec)
 	if(Lines and Lines > 1) then Marker = Token .. string.rep("\n", Lines - 1) end;
 	LogService:Info(Marker);
 	task.defer(function()
-		if(not self.Scroll) then return end;
-		for _, Descendant in ipairs(self.Scroll:GetDescendants()) do
-			if(Descendant:IsA("TextLabel") and Descendant.Name == "msg" and Descendant.Text and string.find(Descendant.Text, Token, 1, true)) then
-				ApplySpec(Descendant, Spec);
-				break;
+		Elevated(function()
+			if(not self.Scroll) then return end;
+			for _, Descendant in ipairs(self.Scroll:GetDescendants()) do
+				if(Descendant:IsA("TextLabel") and Descendant.Name == "msg" and Descendant.Text and string.find(Descendant.Text, Token, 1, true)) then
+					ApplySpec(Descendant, Spec);
+					break;
+				end;
 			end;
-		end;
+		end);
 	end);
 	return(Token);
 end;
@@ -199,7 +227,6 @@ function RealConsole:Text(Kind, Text, FontValue, Size)
 	local Lines = math.max(1, math.ceil(Size / DefaultMessage.LineHeight));
 	return(self:Insert(Lines, {
 		Apply = function(Row)
-setthreadidentity(8)
 			if(Icon) then
 				local IconLabel						= Instance.new("ImageLabel");
 				IconLabel.Name						= "RC_icon";
@@ -226,7 +253,6 @@ setthreadidentity(8)
 			Label.Size						= UDim2.new(1, -DefaultMessage.ArrowOffset, 1, 0);
 			Label.Position					= UDim2.new(0, DefaultMessage.ArrowOffset, 0, 0);
 			Label.Parent					= Row;
-setthreadidentity(2)
 		end,
 	}));
 end;
@@ -244,7 +270,6 @@ function RealConsole:Image(Image, Height)
 	local Source	= type(Image) == "number" and ("rbxassetid://" .. Image) or tostring(Image);
 	return(self:Insert(Lines, {
 		Apply = function(Row)
-setthreadidentity(8)
 			local ImageLabel					= Instance.new("ImageLabel");
 			ImageLabel.Name						= "RC_content";
 			ImageLabel.Image					= Source;
@@ -253,7 +278,6 @@ setthreadidentity(8)
 			ImageLabel.BackgroundTransparency	= 1;
 			ImageLabel.ScaleType				= Enum.ScaleType.Fit;
 			ImageLabel.Parent					= Row;
-setthreadidentity(2)
 		end,
 	}));
 end;
@@ -268,7 +292,6 @@ function RealConsole:Banner(Image, Text, Height, TextColour, FontValue)
 
 	return(self:Insert(Lines, {
 		Apply = function(Row)
-setthreadidentity(8)
 			local Holder					= Instance.new("Frame");
 			Holder.Name						= "RC_content";
 			Holder.BackgroundTransparency	= 1;
@@ -302,7 +325,6 @@ setthreadidentity(8)
 			Label.Parent					= Holder;
 
 			Holder.Parent	= Row;
-setthreadidentity(2)
 		end,
 	}));
 end;
@@ -312,7 +334,6 @@ function RealConsole:Custom(Content, Height)
 	local Lines	= math.max(1, math.ceil(Height / DefaultMessage.LineHeight));
 	return(self:Inject(Lines, {
 		Apply = function(Row)
-setthreadidentity(8)
 			if(type(Content) == "function") then
 				local Made	= Content(Row);
 				if(typeof(Made) == "Instance") then
@@ -325,7 +346,6 @@ setthreadidentity(8)
 				Clone.Position	= UDim2.new(0, DefaultMessage.ArrowOffset, 0, 0);
 				Clone.Parent	= Row;
 			end;
-setthreadidentity(2)
 		end,
 	}));
 end;
