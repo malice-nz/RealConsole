@@ -119,7 +119,6 @@ function RealConsole.New()
 setthreadidentity(8)
 			self:Bind();
 			task.wait(0.25);
-setthreadidentity(2)
 		end;
 	end);
 
@@ -253,7 +252,6 @@ setthreadidentity(8)
 			ImageLabel.BackgroundTransparency	= 1;
 			ImageLabel.ScaleType				= Enum.ScaleType.Fit;
 			ImageLabel.Parent					= Row;
-setthreadidentity(2)
 		end,
 	}));
 end;
@@ -302,7 +300,6 @@ setthreadidentity(8)
 			Label.Parent					= Holder;
 
 			Holder.Parent	= Row;
-setthreadidentity(2)
 		end,
 	}));
 end;
@@ -325,7 +322,6 @@ setthreadidentity(8)
 				Clone.Position	= UDim2.new(0, DefaultMessage.ArrowOffset, 0, 0);
 				Clone.Parent	= Row;
 			end;
-setthreadidentity(2)
 		end,
 	}));
 end;
